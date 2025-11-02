@@ -31,7 +31,7 @@ class RegisterView(generics.CreateAPIView):
             'refresh' : str(refresh),
             'access' : str(refresh.access_token),
             'message' : "User registered successfully"
-        }, stats=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
     
 
 
@@ -43,7 +43,7 @@ class LoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data(user)
+        user = serializer.validated_data['user']
 
         login(request, user)
         refresh = RefreshToken.for_user(user)
@@ -53,7 +53,7 @@ class LoginView(generics.GenericAPIView):
             'refresh' : str(refresh),
             'access' : str(refresh.access_token),
             'message' : "User login successfully"
-        }, stats=status.HTTP_200_OK)
+        }, status=status.HTTP_200_OK)
     
 class ProfileView(generics.RetrieveUpdateAPIView):
     """Просмотр и обновление профиля"""

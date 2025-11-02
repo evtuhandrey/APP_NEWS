@@ -5,25 +5,24 @@ from .models import User
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Сериализатрор для регистрации пользователя"""
+    """Сериализатор для регистрации пользователя"""
     password = serializers.CharField(
-        write_only = True,
-        validators = [validate_password]
+        write_only=True, 
+        validators=[validate_password]
     )
-    password_confirm = serializers.CharField(write_only = True)
-
+    password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fileds = ('username', 'email', 'password', 'password_confirm',
-                  'first_name', 'last_name'
-                )
-        
-    
+        fields = (
+            'username', 'email', 'password', 'password_confirm',
+            'first_name', 'last_name'
+        )
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError(
-                {"password" : "Password fields didnt match."}
+                {"password": "Password fields didnt match."}
             )
         return attrs
     
@@ -38,7 +37,7 @@ class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self,attrs):
+    def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
 
@@ -51,27 +50,24 @@ class UserLoginSerializer(serializers.Serializer):
             if not user:
                 raise serializers.ValidationError(
                     'User not found.'
-            )
-
+                )
             if not user.is_active:
                 raise serializers.ValidationError(
                     'User account is disabled.'
-            )
+                )
             attrs['user'] = user
             return attrs
-
         else:
             raise serializers.ValidationError(
                 'Must include "email" and "password".'
             )
-        
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """Сериализатор для профила пользователя"""
+    """Сериализатор для профиля пользователя"""
     full_name = serializers.ReadOnlyField()
     posts_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
-
 
     class Meta:
         model = User
@@ -83,22 +79,32 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def get_posts_count(self, obj):
-        return obj.posts.count()
-        
-    def get_comments_count(self, obj):
-        return obj.comments.count()
+        """Безопасное получение количества постов"""
+        try:
+            return obj.posts.count()
+        except AttributeError:
+            # Если атрибут posts не существует, возвращаем 0
+            return 0
     
+    def get_comments_count(self, obj):
+        """Безопасное получение количества комментариев"""
+        try:
+            return obj.comments.count()
+        except AttributeError:
+            # Если атрибут comments не существует, возвращаем 0
+            return 0
+
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор для обновления профиля пользователя"""
-
+    
     class Meta:
         model = User
         fields = (
             'first_name', 'last_name', 'avatar', 'bio'
         )
 
-    def update(self, instance, validated_data): #instance - изначальное состояние профиля
+    def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -109,10 +115,10 @@ class ChangePasswordSerializer(serializers.Serializer):
     """Сериализатор для смены пароля"""
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(
-        required = True,
-        validators = {validate_password}
+        required=True,
+        validators=[validate_password]
     )
-    new_password_confirm = serializers.CharField(required = True)
+    new_password_confirm = serializers.CharField(required=True)
 
     def validate_old_password(self, value):
         user = self.context['request'].user
@@ -123,11 +129,12 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password_confirm']:
             raise serializers.ValidationError(
-                {'new_password': 'Password fields didnt match.'}
-                )
+                {'new_password': 'Pasword fields didnt match.'}
+            )
+        return attrs
     
     def save(self):
-        user = user.context['request'].user
+        user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
