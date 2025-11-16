@@ -83,7 +83,7 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         validated_data['status'] = 'pending'
         validated_data['start_date'] = timezone.now()
-        validated_data('end_date') = timezone.now()
+        validated_data['end_date'] = timezone.now()
         return super().create(validated_data)
     
 
